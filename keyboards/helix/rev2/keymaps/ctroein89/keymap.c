@@ -47,11 +47,26 @@ enum custom_keycodes {
   BACKLIT,
   EISU,
   KANA,
+  SE_AO,
+  SE_AE,
+  SE_OE,
   RGBRST
 };
 
 enum macro_keycodes {
   KC_SAMPLEMACRO,
+};
+
+enum unicode_names {
+  SE_AO_LO,
+  SE_AO_UP,
+  SNEK
+};
+
+const uint32_t PROGMEM unicode_map[] = {
+  [SE_AO_LO] = 0x00E5, // å
+  [SE_AO_UP] = 0x00C5, // Å
+  [SNEK]  = 0x1F40D, // 🐍
 };
 
 //Macros
@@ -75,10 +90,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    */
   [_QWERTY] = LAYOUT( \
       KC_ESC,  KC_1,    KC_2,    KC_3,    KC_4,    KC_5,                      KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_BSPC, \
-      KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,                      KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_QUOT, \
+      KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,                      KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    SE_AO, \
       ADJUST, KC_A,    KC_S,    KC_D,    KC_F,    KC_G,                      KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT, \
       KC_LSFT, KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_LBRC, KC_RBRC, KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_ENT , \
-      KC_LCTL,  KC_LALT, KC_LGUI, KC_GRV, EISU,    LOWER,   KC_SPC,  KC_SPC,  RAISE,   KANA,    KC_LEFT, KC_DOWN, KC_UP,   KC_RGHT \
+      KC_LCTL,  KC_LALT, KC_LGUI, KC_GRV, SE_OE,    LOWER,   KC_SPC,  KC_SPC,  RAISE,   SE_AE,    KC_LEFT, KC_DOWN, KC_UP,   KC_RGHT \
       ),
 
   /* Colemak
@@ -355,8 +370,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         persistent_default_layer_set(1UL<<_COLEMAK);
       }
       return false;
-      break;
-    case DVORAK:
+        break;
+      case DVORAK:
       if (record->event.pressed) {
         #ifdef AUDIO_ENABLE
           PLAY_SONG(tone_dvorak);
@@ -454,6 +469,41 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       }
       return false;
       break;
+    case SE_AO:
+      if (record->event.pressed) {
+        // MacOS accepts "Option A" as å/Å
+        tap_code16(A(KC_A));
+        return false;
+      }
+      break;
+    case SE_OE:
+      if (record->event.pressed) {
+        // MacOS accepts "Option-u O" as ö/Ö
+        uint8_t mod_state = get_mods();
+        // unset any shift state before applying the macro
+        // shift breaks the Option-u shortcut
+        del_mods(MOD_MASK_SHIFT);
+        tap_code16(A(KC_U));
+        wait_ms(1);
+        set_mods(mod_state);
+        tap_code16(KC_O);
+        return false;
+      }
+      break;
+    case SE_AE:
+      if (record->event.pressed) {
+        // MacOS accepts "Option-u Ä" as ä/Ä
+        uint8_t mod_state = get_mods();
+        // unset any shift state before applying the macro
+        // shift breaks the Option-u shortcut
+        del_mods(MOD_MASK_SHIFT);
+        tap_code16(A(KC_U));
+        wait_ms(1);
+        set_mods(mod_state);
+        tap_code(KC_A);
+        return false;
+      }
+      break;
     case RGBRST:
       #ifdef RGBLIGHT_ENABLE
         if (record->event.pressed) {
@@ -497,6 +547,7 @@ void shutdown_user()
     _delay_ms(150);
     stop_all_notes();
 }
+
 
 void music_on_user(void)
 {
